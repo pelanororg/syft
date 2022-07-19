@@ -26,6 +26,7 @@ const (
 	JavaMetadataType               MetadataType = "JavaMetadata"
 	KbPackageMetadataType          MetadataType = "KbPackageMetadata"
 	MixLockMetadataType            MetadataType = "MixLockMetadataType"
+	NixStoreMetadataType           MetadataType = "NixStoreMetadata"
 	NpmPackageJSONMetadataType     MetadataType = "NpmPackageJsonMetadata"
 	NpmPackageLockJSONMetadataType MetadataType = "NpmPackageLockJsonMetadata"
 	PhpComposerJSONMetadataType    MetadataType = "PhpComposerJsonMetadata"
@@ -54,6 +55,7 @@ var AllMetadataTypes = []MetadataType{
 	JavaMetadataType,
 	KbPackageMetadataType,
 	MixLockMetadataType,
+	NixStoreMetadataType,
 	NpmPackageJSONMetadataType,
 	NpmPackageLockJSONMetadataType,
 	PhpComposerJSONMetadataType,
@@ -81,6 +83,7 @@ var MetadataTypeByName = map[MetadataType]reflect.Type{
 	HackageMetadataType:            reflect.TypeOf(HackageMetadata{}),
 	JavaMetadataType:               reflect.TypeOf(JavaMetadata{}),
 	KbPackageMetadataType:          reflect.TypeOf(KbPackageMetadata{}),
+	NixStoreMetadataType:           reflect.TypeOf(NixStoreMetadata{}),
 	MixLockMetadataType:            reflect.TypeOf(MixLockMetadata{}),
 	NpmPackageJSONMetadataType:     reflect.TypeOf(NpmPackageJSONMetadata{}),
 	NpmPackageLockJSONMetadataType: reflect.TypeOf(NpmPackageLockJSONMetadata{}),

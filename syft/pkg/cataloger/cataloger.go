@@ -29,6 +29,7 @@ import (
 	"github.com/anchore/syft/syft/pkg/cataloger/rpm"
 	"github.com/anchore/syft/syft/pkg/cataloger/ruby"
 	"github.com/anchore/syft/syft/pkg/cataloger/rust"
+	"github.com/anchore/syft/syft/pkg/cataloger/nix"
 	"github.com/anchore/syft/syft/pkg/cataloger/sbom"
 	"github.com/anchore/syft/syft/pkg/cataloger/swift"
 )
@@ -51,6 +52,7 @@ func ImageCatalogers(cfg Config) []pkg.Cataloger {
 		golang.NewGoModuleBinaryCataloger(),
 		dotnet.NewDotnetDepsCataloger(),
 		portage.NewPortageCataloger(),
+		nix.NewStoreCataloger(),
 		sbom.NewSBOMCataloger(),
 		binary.NewCataloger(),
 	}, cfg.Catalogers)
@@ -121,6 +123,7 @@ func AllCatalogers(cfg Config) []pkg.Cataloger {
 		binary.NewCataloger(),
 		elixir.NewMixLockCataloger(),
 		erlang.NewRebarLockCataloger(),
+		nix.NewStoreCataloger(),
 	}, cfg.Catalogers)
 }
 
