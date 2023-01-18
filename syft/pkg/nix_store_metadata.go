@@ -1,37 +1,9 @@
 package pkg
 
-import (
-	"github.com/anchore/packageurl-go"
-	"github.com/anchore/syft/syft/linux"
-)
-
-const NixStoreGlob = "/nix/store/**"
-
 type NixStoreMetadata struct {
-	Package       string           `mapstructure:"Package" json:"package"`
-	Architecture  string           `mapstructure:"A" json:"architecture"`
-	Source        string           `mapstructure:"Source" json:"source"`
-	Version       string           `mapstructure:"Version" json:"version"`
-	SourceVersion string           `mapstructure:"SourceVersion" json:"sourceVersion"`
-}
+	// Hash is the prefix of the nix store basename path
+	Hash string `mapstructure:"hash" json:"hash"`
 
-func (m NixStoreMetadata) PackageURL(d *linux.Release) string {
-	if d == nil {
-		return ""
-	}
-	pURL := packageurl.NewPackageURL(
-		// TODO: replace with `packageurl.TypeDebian` upon merge of https://github.com/package-url/packageurl-go/pull/21
-		// TODO: or, since we're now using an Anchore fork of this module, we could do this sooner.
-		"nix",
-		"",
-		m.Package,
-		m.Version,
-		packageurl.Qualifiers{
-			{
-				Key:   "arch",
-				Value: m.Architecture,
-			},
-		},
-		"")
-	return pURL.ToString()
+	// Output allows for optionally specifying the specific nix package output this package represents (for packages that support multiple outputs)
+	Output string `mapstructure:"output" json:"output,omitempty"`
 }
