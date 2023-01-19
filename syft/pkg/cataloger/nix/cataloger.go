@@ -13,7 +13,7 @@ import (
 
 const (
 	catalogerName = "nix-store-cataloger"
-	nixStoreGlob  = "/nix/store/*"
+	nixStoreGlob  = "**/nix/store/*"
 )
 
 var (
@@ -25,6 +25,7 @@ var (
 	//  major: "2"
 	//  minor: "34"
 	//  patch: "210"
+	// (there are other capture groups, but they can be ignored)
 	rightMostVersionIshPattern = regexp.MustCompile(`-(?P<version>(?P<major>[0-9][a-zA-Z0-9]*)(\.(?P<minor>[0-9][a-zA-Z0-9]*))?(\.(?P<patch>0|[1-9][a-zA-Z0-9]*)){0,3}(?:-(?P<prerelease>\d*[.a-zA-Z-][.0-9a-zA-Z-]*)*)?(?:\+(?P<metadata>[.0-9a-zA-Z-]+(?:\.[.0-9a-zA-Z-]+)*))?)`)
 )
 

@@ -104,6 +104,18 @@ func (p *CatalogTester) WithResolver(r source.FileResolver) *CatalogTester {
 	return p
 }
 
+func (p *CatalogTester) WithDirectoryResolver(t *testing.T, path string) *CatalogTester {
+	t.Helper()
+
+	s, err := source.NewFromDirectory(path)
+	require.NoError(t, err)
+
+	r, err := s.FileResolver(source.SquashedScope)
+	require.NoError(t, err)
+	p.resolver = r
+	return p
+}
+
 func (p *CatalogTester) WithImageResolver(t *testing.T, fixtureName string) *CatalogTester {
 	t.Helper()
 	img := imagetest.GetFixtureImage(t, "docker-archive", fixtureName)
