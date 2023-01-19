@@ -2,8 +2,10 @@ package source
 
 import (
 	"io"
+	"sort"
 	"testing"
 
+	"github.com/scylladb/go-set/strset"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -540,4 +542,44 @@ func Test_imageAllLayersResolver_resolvesLinks(t *testing.T) {
 		})
 	}
 
+}
+
+func Test_allLayersResolver_AllLocations(t *testing.T) {
+	tests := []struct {
+		fixture  string
+		expected *strset.Set
+	}{
+		{
+			fixture: "image-simple",
+			expected: strset.New(
+				"/really",
+				"/really/.wh..wh..opq",
+				"/really/nested",
+				"/really/nested/file-3.txt",
+				"/somefile-1.txt",
+				"/somefile-2.txt",
+			),
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.fixture, func(t *testing.T) {
+			img := imagetest.GetFixtureImage(t, "docker-archive", test.fixture)
+
+			resolver, err := newAllLayersResolver(img)
+			require.NoError(t, err)
+
+			locations := strset.New()
+			for location := range resolver.AllLocations() {
+				locations.Add(location.RealPath)
+			}
+
+			expected := test.expected.List()
+			sort.Strings(expected)
+
+			actual := locations.List()
+			sort.Strings(actual)
+
+			assert.Equal(t, expected, actual)
+		})
+	}
 }

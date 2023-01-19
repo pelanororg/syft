@@ -11,6 +11,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -884,4 +885,47 @@ func TestDirectoryResolver_indexPath(t *testing.T) {
 			assert.NoError(t, err)
 		})
 	})
+}
+
+func Test_directoryResolver_AllLocations(t *testing.T) {
+	tests := []struct {
+		fixture  string
+		expected *strset.Set
+	}{
+		{
+			fixture: "test-fixtures/image-simple",
+			expected: strset.New(
+				"Dockerfile",
+				"file-1.txt",
+				"file-2.txt",
+				"target",
+				"target/really",
+				"target/really/nested",
+				"target/really/nested/file-3.txt",
+			),
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.fixture, func(t *testing.T) {
+			resolver, err := newDirectoryResolver(test.fixture)
+			require.NoError(t, err)
+
+			locations := strset.New()
+			for location := range resolver.AllLocations() {
+				if strings.Contains(location.RealPath, test.fixture) {
+					// remove the root
+					continue
+				}
+				locations.Add(location.RealPath)
+			}
+
+			expected := test.expected.List()
+			sort.Strings(expected)
+
+			actual := locations.List()
+			sort.Strings(actual)
+
+			assert.Equal(t, expected, actual)
+		})
+	}
 }
