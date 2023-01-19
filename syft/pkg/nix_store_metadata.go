@@ -6,4 +6,7 @@ type NixStoreMetadata struct {
 
 	// Output allows for optionally specifying the specific nix package output this package represents (for packages that support multiple outputs)
 	Output string `mapstructure:"output" json:"output,omitempty"`
+
+	// Files is a listing a files that are under the nix/store path for this package
+	Files []string `mapstructure:"files" json:"files,omitempty"`
 }

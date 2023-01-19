@@ -237,3 +237,48 @@ func Test_parseNixStorePath(t *testing.T) {
 		})
 	}
 }
+
+func Test_parentNixStorePath(t *testing.T) {
+
+	tests := []struct {
+		name   string
+		source string
+		want   string
+	}{
+		{
+			name:   "exact path from absolute root",
+			source: "/nix/store/5zzrvdmlkc5rh3k5862krd3wfb3pqhyf-perl5.34.1-TimeDate-2.33",
+			want:   "",
+		},
+		{
+			name:   "exact path from relative root",
+			source: "nix/store/5zzrvdmlkc5rh3k5862krd3wfb3pqhyf-perl5.34.1-TimeDate-2.33",
+			want:   "",
+		},
+		{
+			name:   "clean paths",
+			source: "//nix/store/5zzrvdmlkc5rh3k5862krd3wfb3pqhyf-perl5.34.1-TimeDate-2.33///",
+			want:   "",
+		},
+		{
+			name:   "relative root with subdir file",
+			source: "nix/store/5zzrvdmlkc5rh3k5862krd3wfb3pqhyf-perl5.34.1-TimeDate-2.33/bin/perl-timedate",
+			want:   "nix/store/5zzrvdmlkc5rh3k5862krd3wfb3pqhyf-perl5.34.1-TimeDate-2.33",
+		},
+		{
+			name:   "absolute root with with subdir file",
+			source: "/nix/store/5zzrvdmlkc5rh3k5862krd3wfb3pqhyf-perl5.34.1-TimeDate-2.33/bin/perl-timedate",
+			want:   "/nix/store/5zzrvdmlkc5rh3k5862krd3wfb3pqhyf-perl5.34.1-TimeDate-2.33",
+		},
+		{
+			name:   "nexted root with with subdir file",
+			source: "/somewhere/nix/store/5zzrvdmlkc5rh3k5862krd3wfb3pqhyf-perl5.34.1-TimeDate-2.33/bin/perl-timedate",
+			want:   "/somewhere/nix/store/5zzrvdmlkc5rh3k5862krd3wfb3pqhyf-perl5.34.1-TimeDate-2.33",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, findParentNixStorePath(tt.source))
+		})
+	}
+}

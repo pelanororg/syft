@@ -17,6 +17,24 @@ func (p nixStorePath) isValidPackage() bool {
 	return p.name != "" && p.version != ""
 }
 
+func findParentNixStorePath(source string) string {
+	source = strings.TrimRight(source, "/")
+	indicator := "nix/store/"
+	start := strings.Index(source, indicator)
+	if start == -1 {
+		return ""
+	}
+
+	startOfHash := start + len(indicator)
+	nextField := strings.Index(source[startOfHash:], "/")
+	if nextField == -1 {
+		return ""
+	}
+	startOfSubPath := startOfHash + nextField
+
+	return source[0:startOfSubPath]
+}
+
 func parseNixStorePath(source string) *nixStorePath {
 	if strings.HasSuffix(source, ".drv") {
 		// ignore derivations

@@ -30,6 +30,13 @@ func TestCataloger_Catalog(t *testing.T) {
 					Metadata: pkg.NixStoreMetadata{
 						Hash:   "h0cnbmfcn93xm5dg2x27ixhag1cwndga",
 						Output: "bin",
+						Files: []string{
+							"nix/store/h0cnbmfcn93xm5dg2x27ixhag1cwndga-glibc-2.34-210-bin/lib",
+							"nix/store/h0cnbmfcn93xm5dg2x27ixhag1cwndga-glibc-2.34-210-bin/lib/glibc.so",
+							"nix/store/h0cnbmfcn93xm5dg2x27ixhag1cwndga-glibc-2.34-210-bin/share",
+							"nix/store/h0cnbmfcn93xm5dg2x27ixhag1cwndga-glibc-2.34-210-bin/share/man",
+							"nix/store/h0cnbmfcn93xm5dg2x27ixhag1cwndga-glibc-2.34-210-bin/share/man/glibc.1",
+						},
 					},
 				},
 			},
