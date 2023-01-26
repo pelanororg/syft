@@ -3,6 +3,7 @@ package source
 import (
 	"errors"
 	"fmt"
+	"github.com/anchore/stereoscope/pkg/query"
 	"io"
 	"io/fs"
 	"os"
@@ -40,7 +41,7 @@ type directoryResolver struct {
 	currentWdRelativeToRoot string
 	currentWd               string
 	fileTree                *filetree.FileTree
-	metadata                map[file.ID]FileMetadata
+	fileIndex               *file.Index
 	// TODO: wire up to report these paths in the json report
 	pathFilterFns  []pathFilterFn
 	refsByMIMEType map[string][]file.Reference
@@ -79,17 +80,18 @@ func newDirectoryResolver(root string, pathFilters ...pathFilterFn) (*directoryR
 		currentWd:               cleanCWD,
 		currentWdRelativeToRoot: currentWdRelRoot,
 		fileTree:                filetree.NewFileTree(),
-		metadata:                make(map[file.ID]FileMetadata),
+		fileIndex:               file.NewIndex(),
 		pathFilterFns:           append([]pathFilterFn{isUnallowableFileType, isUnixSystemRuntimePath}, pathFilters...),
 		refsByMIMEType:          make(map[string][]file.Reference),
 		errPaths:                make(map[string]error),
 	}
 
+	log.WithFields("path", cleanRoot).Debug("indexing full filetree")
 	return &resolver, indexAllRoots(cleanRoot, resolver.indexTree)
 }
 
 func (r *directoryResolver) indexTree(root string, stager *progress.Stage) ([]string, error) {
-	log.Debugf("indexing filesystem path=%q", root)
+	log.WithFields("path", root).Trace("indexing filetree")
 
 	var roots []string
 	var err error
@@ -206,8 +208,7 @@ func (r directoryResolver) hasBeenIndexed(p string) bool {
 
 	// cases like "/" will be in the tree, but not been indexed yet (a special case). We want to capture
 	// these cases as new paths to index.
-	_, exists = r.metadata[ref.ID()]
-	return exists
+	return r.fileIndex.Exists(*ref)
 }
 
 func (r directoryResolver) addDirectoryToIndex(p string, info os.FileInfo) error {
@@ -218,7 +219,7 @@ func (r directoryResolver) addDirectoryToIndex(p string, info os.FileInfo) error
 
 	location := NewLocationFromDirectory(p, *ref)
 	metadata := fileMetadataFromPath(p, info, r.isInIndex(location))
-	r.addFileMetadataToIndex(ref, metadata)
+	r.addFileToFileIndex(ref, metadata)
 
 	return nil
 }
@@ -231,7 +232,7 @@ func (r directoryResolver) addFileToIndex(p string, info os.FileInfo) error {
 
 	location := NewLocationFromDirectory(p, *ref)
 	metadata := fileMetadataFromPath(p, info, r.isInIndex(location))
-	r.addFileMetadataToIndex(ref, metadata)
+	r.addFileToFileIndex(ref, metadata)
 
 	return nil
 }
@@ -264,17 +265,17 @@ func (r directoryResolver) addSymlinkToIndex(p string, info os.FileInfo) (string
 	location.VirtualPath = p
 	metadata := fileMetadataFromPath(p, usedInfo, r.isInIndex(location))
 	metadata.LinkDestination = linkTarget
-	r.addFileMetadataToIndex(ref, metadata)
+	r.addFileToFileIndex(ref, metadata)
 
 	return targetAbsPath, nil
 }
 
-func (r directoryResolver) addFileMetadataToIndex(ref *file.Reference, metadata FileMetadata) {
+func (r directoryResolver) addFileToFileIndex(ref *file.Reference, metadata file.Metadata) {
 	if ref != nil {
 		if metadata.MIMEType != "" {
 			r.refsByMIMEType[metadata.MIMEType] = append(r.refsByMIMEType[metadata.MIMEType], *ref)
 		}
-		r.metadata[ref.ID()] = metadata
+		r.fileIndex.Add(*ref, metadata, nil)
 	}
 }
 
@@ -335,48 +336,35 @@ func (r directoryResolver) FilesByPath(userPaths ...string) ([]Location, error) 
 			continue
 		}
 
-		// we should be resolving symlinks and preserving this information as a VirtualPath to the real file
-		evaluatedPath, err := filepath.EvalSymlinks(userStrPath)
+		tree := r.fileTree
+		_, ref, err := tree.File(file.Path(userStrPath), filetree.FollowBasenameLinks)
 		if err != nil {
-			log.Tracef("unable to evaluate symlink for path=%q : %+v", userPath, err)
+			return nil, err
+		}
+		if ref == nil {
+			// no file found, keep looking through layers
 			continue
 		}
 
-		// TODO: why not use stored metadata?
-		fileMeta, err := os.Stat(evaluatedPath)
-		if errors.Is(err, os.ErrNotExist) {
-			// note: there are other kinds of errors other than os.ErrNotExist that may be given that is platform
-			// specific, but essentially hints at the same overall problem (that the path does not exist). Such an
-			// error could be syscall.ENOTDIR (see https://github.com/golang/go/issues/18974).
+		// don't consider directories (special case: there is no path information for /)
+		if ref.RealPath == "/" {
 			continue
-		} else if err != nil {
-			// we don't want to consider any other syscalls that may hint at non-existence of the file/dir as
-			// invalid paths. This logging statement is meant to raise IO or permissions related problems.
-			var pathErr *os.PathError
-			if !errors.As(err, &pathErr) {
-				log.Warnf("path is not valid (%s): %+v", evaluatedPath, err)
+		} else if r.fileIndex.Exists(*ref) {
+			metadata, err := r.fileIndex.Get(*ref)
+			if err != nil {
+				return nil, fmt.Errorf("unable to get file metadata for path=%q: %w", ref.RealPath, err)
 			}
-			continue
+			if metadata.Metadata.IsDir {
+				continue
+			}
 		}
 
-		// don't consider directories
-		if fileMeta.IsDir() {
-			continue
-		}
-
-		if runtime.GOOS == WindowsOS {
-			userStrPath = windowsToPosix(userStrPath)
-		}
-
-		exists, ref, err := r.fileTree.File(file.Path(userStrPath), filetree.FollowBasenameLinks)
-		if err == nil && exists {
-			loc := NewVirtualLocationFromDirectory(
-				r.responsePath(string(ref.RealPath)), // the actual path relative to the resolver root
-				r.responsePath(userStrPath),          // the path used to access this file, relative to the resolver root
-				*ref,
-			)
-			references = append(references, loc)
-		}
+		loc := NewVirtualLocationFromDirectory(
+			r.responsePath(string(ref.RealPath)), // the actual path relative to the resolver root
+			r.responsePath(userStrPath),          // the path used to access this file, relative to the resolver root
+			*ref,
+		)
+		references = append(references, loc)
 	}
 
 	return references, nil
@@ -408,16 +396,15 @@ func (r directoryResolver) FilesByExtension(extensions ...string) ([]Location, e
 	result := make([]Location, 0)
 
 	for _, extension := range extensions {
-		// TODO: is there a faster way to do this?
-		globResults, err := r.fileTree.FilesByGlob("**/*"+extension, filetree.FollowBasenameLinks)
+
+		refs, err := query.FilesByExtension(r.fileTree, r.fileIndex, extension)
 		if err != nil {
 			return nil, err
 		}
-		for _, globResult := range globResults {
-			loc := NewVirtualLocationFromDirectory(
-				r.responsePath(string(globResult.Reference.RealPath)), // the actual path relative to the resolver root
-				r.responsePath(string(globResult.MatchPath)),          // the path used to access this file, relative to the resolver root
-				globResult.Reference,
+		for _, ref := range refs {
+			loc := NewLocationFromDirectory(
+				r.responsePath(string(ref.RealPath)),
+				ref,
 			)
 			result = append(result, loc)
 		}
@@ -430,16 +417,14 @@ func (r directoryResolver) FilesByBasename(filenames ...string) ([]Location, err
 	result := make([]Location, 0)
 
 	for _, filename := range filenames {
-		// TODO: is there a faster way to do this?
-		globResults, err := r.fileTree.FilesByGlob("**/"+filename, filetree.FollowBasenameLinks)
+		refs, err := query.FilesByBasename(r.fileTree, r.fileIndex, filename)
 		if err != nil {
 			return nil, err
 		}
-		for _, globResult := range globResults {
-			loc := NewVirtualLocationFromDirectory(
-				r.responsePath(string(globResult.Reference.RealPath)), // the actual path relative to the resolver root
-				r.responsePath(string(globResult.MatchPath)),          // the path used to access this file, relative to the resolver root
-				globResult.Reference,
+		for _, ref := range refs {
+			loc := NewLocationFromDirectory(
+				r.responsePath(string(ref.RealPath)),
+				ref,
 			)
 			result = append(result, loc)
 		}
@@ -448,21 +433,18 @@ func (r directoryResolver) FilesByBasename(filenames ...string) ([]Location, err
 	return result, nil
 }
 
-// TODO: duplicate code with FilesByBasename
 func (r directoryResolver) FilesByBasenameGlob(globs ...string) ([]Location, error) {
 	result := make([]Location, 0)
 
 	for _, glob := range globs {
-		// TODO: is there a faster way to do this?
-		globResults, err := r.fileTree.FilesByGlob("**/"+glob, filetree.FollowBasenameLinks)
+		refs, err := query.FilesByBasenameGlob(r.fileTree, r.fileIndex, glob)
 		if err != nil {
 			return nil, err
 		}
-		for _, globResult := range globResults {
-			loc := NewVirtualLocationFromDirectory(
-				r.responsePath(string(globResult.Reference.RealPath)), // the actual path relative to the resolver root
-				r.responsePath(string(globResult.MatchPath)),          // the path used to access this file, relative to the resolver root
-				globResult.Reference,
+		for _, ref := range refs {
+			loc := NewLocationFromDirectory(
+				r.responsePath(string(ref.RealPath)),
+				ref,
 			)
 			result = append(result, loc)
 		}
@@ -526,13 +508,13 @@ func (r *directoryResolver) AllLocations() <-chan Location {
 	return results
 }
 
-func (r *directoryResolver) FileMetadataByLocation(location Location) (FileMetadata, error) {
-	metadata, exists := r.metadata[location.ref.ID()]
-	if !exists {
-		return FileMetadata{}, fmt.Errorf("location: %+v : %w", location, os.ErrNotExist)
+func (r *directoryResolver) FileMetadataByLocation(location Location) (file.Metadata, error) {
+	indexEntry, err := r.fileIndex.Get(location.ref)
+	if err != nil {
+		return file.Metadata{}, fmt.Errorf("location: %+v : %w", location, err)
 	}
 
-	return metadata, nil
+	return indexEntry.Metadata, nil
 }
 
 func (r *directoryResolver) FilesByMIMEType(types ...string) ([]Location, error) {

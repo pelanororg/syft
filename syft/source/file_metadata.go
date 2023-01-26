@@ -8,15 +8,7 @@ import (
 	"github.com/anchore/syft/internal/log"
 )
 
-type FileMetadata struct {
-	Mode            os.FileMode
-	Type            FileType
-	UserID          int
-	GroupID         int
-	LinkDestination string
-	Size            int64
-	MIMEType        string
-}
+type FileMetadata = file.Metadata
 
 func fileMetadataByLocation(img *image.Image, location Location) (FileMetadata, error) {
 	entry, err := img.FileCatalog.Get(location.ref)
@@ -24,18 +16,10 @@ func fileMetadataByLocation(img *image.Image, location Location) (FileMetadata, 
 		return FileMetadata{}, err
 	}
 
-	return FileMetadata{
-		Mode:            entry.Metadata.Mode,
-		Type:            newFileTypeFromTarHeaderTypeFlag(entry.Metadata.TypeFlag),
-		UserID:          entry.Metadata.UserID,
-		GroupID:         entry.Metadata.GroupID,
-		LinkDestination: entry.Metadata.Linkname,
-		Size:            entry.Metadata.Size,
-		MIMEType:        entry.Metadata.MIMEType,
-	}, nil
+	return entry.Metadata, nil
 }
 
-func fileMetadataFromPath(path string, info os.FileInfo, withMIMEType bool) FileMetadata {
+func fileMetadataFromPath(path string, info os.FileInfo, withMIMEType bool) file.Metadata {
 	var mimeType string
 	uid, gid := GetXid(info)
 
@@ -55,13 +39,14 @@ func fileMetadataFromPath(path string, info os.FileInfo, withMIMEType bool) File
 		mimeType = file.MIMEType(f)
 	}
 
-	return FileMetadata{
+	return file.Metadata{
 		Mode: info.Mode(),
-		Type: newFileTypeFromMode(info.Mode()),
+		Type: file.TypeFromMode(info.Mode()),
 		// unsupported across platforms
 		UserID:   uid,
 		GroupID:  gid,
 		Size:     info.Size(),
 		MIMEType: mimeType,
+		// note: link destination is intentionally not set here, this requires knowledge of the filetree
 	}
 }

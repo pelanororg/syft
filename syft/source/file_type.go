@@ -2,25 +2,26 @@ package source
 
 import (
 	"archive/tar"
+	"github.com/anchore/stereoscope/pkg/file"
 	"os"
 )
 
 const (
-	RegularFile FileType = "RegularFile"
+	RegularFile = file.TypeReg
 	// IrregularFile is how syft defines files that are neither regular, symbolic or directory.
 	// For ref: the seven standard Unix file types are regular, directory, symbolic link,
 	// FIFO special, block special, character special, and socket as defined by POSIX.
-	IrregularFile   FileType = "IrregularFile"
-	HardLink        FileType = "HardLink"
-	SymbolicLink    FileType = "SymbolicLink"
-	CharacterDevice FileType = "CharacterDevice"
-	BlockDevice     FileType = "BlockDevice"
-	Directory       FileType = "Directory"
-	FIFONode        FileType = "FIFONode"
-	Socket          FileType = "Socket"
+	IrregularFile   = file.TypeIrregular
+	HardLink        = file.TypeHardLink
+	SymbolicLink    = file.TypeSymlink
+	CharacterDevice = file.TypeCharacterDevice
+	BlockDevice     = file.TypeBlockDevice
+	Directory       = file.TypeDir
+	FIFONode        = file.TypeFifo
+	Socket          = file.TypeSocket
 )
 
-type FileType string
+type FileType = file.Type
 
 func newFileTypeFromTarHeaderTypeFlag(flag byte) FileType {
 	switch flag {

@@ -2,6 +2,7 @@ package source
 
 import (
 	"fmt"
+	"github.com/anchore/stereoscope/pkg/file"
 	"io"
 	"os"
 	"path"
@@ -159,9 +160,9 @@ func (r MockResolver) FileMetadataByLocation(l Location) (FileMetadata, error) {
 	}
 
 	// other types not supported
-	ty := RegularFile
+	ty := file.TypeReg
 	if info.IsDir() {
-		ty = Directory
+		ty = file.TypeDir
 	}
 
 	return FileMetadata{

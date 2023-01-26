@@ -1,7 +1,6 @@
 package source
 
 import (
-	"archive/tar"
 	"fmt"
 	"io"
 
@@ -56,7 +55,7 @@ func (r *imageAllLayersResolver) fileByRef(ref file.Reference, uniqueFileIDs fil
 		return nil, fmt.Errorf("unable to fetch metadata (ref=%+v): %w", ref, err)
 	}
 
-	if entry.Metadata.TypeFlag == tar.TypeLink || entry.Metadata.TypeFlag == tar.TypeSymlink {
+	if entry.Metadata.Type == file.TypeHardLink || entry.Metadata.Type == file.TypeSymlink {
 		// a link may resolve in this layer or higher, assuming a squashed tree is used to search
 		// we should search all possible resolutions within the valid source
 		for _, subLayerIdx := range r.layers[layerIdx:] {
@@ -162,12 +161,12 @@ func (r *imageAllLayersResolver) FilesByGlob(patterns ...string) ([]Location, er
 // RelativeFileByPath fetches a single file at the given path relative to the layer squash of the given reference.
 // This is helpful when attempting to find a file that is in the same layer or lower as another file.
 func (r *imageAllLayersResolver) RelativeFileByPath(location Location, path string) *Location {
-	entry, err := r.img.FileCatalog.Get(location.ref)
-	if err != nil {
+	layer := r.img.FileCatalog.Layer(location.ref)
+	if layer == nil {
 		return nil
 	}
 
-	exists, relativeRef, err := entry.Layer.SquashedTree.File(file.Path(path), filetree.FollowBasenameLinks)
+	exists, relativeRef, err := layer.SquashedTree.File(file.Path(path), filetree.FollowBasenameLinks)
 	if err != nil {
 		log.Errorf("failed to find path=%q in squash: %+w", path, err)
 		return nil
@@ -189,8 +188,8 @@ func (r *imageAllLayersResolver) FileContentsByLocation(location Location) (io.R
 		return nil, fmt.Errorf("unable to get metadata for path=%q from file catalog: %w", location.RealPath, err)
 	}
 
-	switch entry.Metadata.TypeFlag {
-	case tar.TypeSymlink, tar.TypeLink:
+	switch entry.Metadata.Type {
+	case file.TypeSymlink, file.TypeHardLink:
 		// the location we are searching may be a symlink, we should always work with the resolved file
 		newLocation := r.RelativeFileByPath(location, location.VirtualPath)
 		if newLocation == nil {
@@ -287,7 +286,7 @@ func (r *imageAllLayersResolver) AllLocations() <-chan Location {
 		defer close(results)
 		for _, layerIdx := range r.layers {
 			tree := r.img.Layers[layerIdx].Tree
-			for _, ref := range tree.AllFiles(file.AllTypes...) {
+			for _, ref := range tree.AllFiles(file.AllTypes()...) {
 				results <- NewLocationFromImage(string(ref.RealPath), ref, r.img)
 			}
 		}

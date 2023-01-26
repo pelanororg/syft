@@ -1,7 +1,6 @@
 package source
 
 import (
-	"archive/tar"
 	"fmt"
 	"io"
 
@@ -143,8 +142,8 @@ func (r *imageSquashResolver) FileContentsByLocation(location Location) (io.Read
 		return nil, fmt.Errorf("unable to get metadata for path=%q from file catalog: %w", location.RealPath, err)
 	}
 
-	switch entry.Metadata.TypeFlag {
-	case tar.TypeSymlink, tar.TypeLink:
+	switch entry.Metadata.Type {
+	case file.TypeSymlink, file.TypeHardLink:
 		// the location we are searching may be a symlink, we should always work with the resolved file
 		locations, err := r.FilesByPath(location.RealPath)
 		if err != nil {
@@ -168,7 +167,7 @@ func (r *imageSquashResolver) AllLocations() <-chan Location {
 	results := make(chan Location)
 	go func() {
 		defer close(results)
-		for _, ref := range r.img.SquashedTree().AllFiles(file.AllTypes...) {
+		for _, ref := range r.img.SquashedTree().AllFiles(file.AllTypes()...) {
 			results <- NewLocationFromImage(string(ref.RealPath), ref, r.img)
 		}
 	}()
