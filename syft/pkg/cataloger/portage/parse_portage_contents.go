@@ -6,11 +6,9 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/anchore/syft/internal"
 	"github.com/anchore/syft/internal/log"
 	"github.com/anchore/syft/syft/artifact"
 	"github.com/anchore/syft/syft/file"
@@ -107,18 +105,7 @@ func addLicenses(resolver source.FileResolver, dbLocation source.Location, p *pk
 		return
 	}
 
-	findings := internal.NewStringSet()
-	scanner := bufio.NewScanner(licenseReader)
-	scanner.Split(bufio.ScanWords)
-	for scanner.Scan() {
-		token := scanner.Text()
-		if token != "||" && token != "(" && token != ")" {
-			findings.Add(token)
-		}
-	}
-	licenses := findings.ToSlice()
-	sort.Strings(licenses)
-	p.Licenses = licenses
+	p.Licenses = extractLicenses(licenseReader)
 	p.Locations.Add(location.WithAnnotation(pkg.EvidenceAnnotationKey, pkg.SupportingEvidenceAnnotation))
 }
 
