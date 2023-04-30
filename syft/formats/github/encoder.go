@@ -2,6 +2,7 @@ package github
 
 import (
 	"fmt"
+	"github.com/anchore/syft/syft/source/scheme"
 	"strings"
 	"time"
 
@@ -85,15 +86,15 @@ func toPath(s source.Metadata, p pkg.Package) string {
 		}
 		packagePath = strings.TrimPrefix(packagePath, "/")
 		switch s.Scheme {
-		case source.ImageScheme:
+		case scheme.ContainerImageScheme:
 			image := strings.ReplaceAll(s.ImageMetadata.UserInput, ":/", "//")
 			return fmt.Sprintf("%s:/%s", image, packagePath)
-		case source.FileScheme:
+		case scheme.FileScheme:
 			if isArchive(inputPath) {
 				return fmt.Sprintf("%s:/%s", inputPath, packagePath)
 			}
 			return inputPath
-		case source.DirectoryScheme:
+		case scheme.DirectoryScheme:
 			if inputPath != "" {
 				return fmt.Sprintf("%s/%s", inputPath, packagePath)
 			}

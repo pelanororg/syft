@@ -2,6 +2,7 @@ package spdxhelpers
 
 import (
 	"github.com/anchore/syft/syft/source"
+	"github.com/anchore/syft/syft/source/scheme"
 )
 
 func DocumentName(srcMetadata source.Metadata) string {
@@ -10,9 +11,9 @@ func DocumentName(srcMetadata source.Metadata) string {
 	}
 
 	switch srcMetadata.Scheme {
-	case source.ImageScheme:
+	case scheme.ContainerImageScheme:
 		return srcMetadata.ImageMetadata.UserInput
-	case source.DirectoryScheme, source.FileScheme:
+	case scheme.DirectoryScheme, scheme.FileScheme:
 		return srcMetadata.Path
 	default:
 		return "unknown"

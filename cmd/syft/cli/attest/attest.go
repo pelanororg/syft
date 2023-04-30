@@ -3,6 +3,7 @@ package attest
 import (
 	"context"
 	"fmt"
+	"github.com/anchore/syft/syft/source/scheme"
 	"os"
 	"os/exec"
 	"strings"
@@ -52,7 +53,7 @@ func Run(_ context.Context, app *config.Application, args []string) error {
 		return fmt.Errorf("could not generate source input for packages command: %w", err)
 	}
 
-	if si.Scheme != source.ImageScheme {
+	if si.Scheme != scheme.ContainerImageScheme {
 		return fmt.Errorf("attestations are only supported for oci images at this time")
 	}
 

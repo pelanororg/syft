@@ -2,6 +2,7 @@ package spdxhelpers
 
 import (
 	"fmt"
+	"github.com/anchore/syft/syft/source/scheme"
 	"net/url"
 	"path"
 	"strings"
@@ -27,11 +28,11 @@ func DocumentNamespace(name string, srcMetadata source.Metadata) string {
 	name = cleanName(name)
 	input := "unknown-source-type"
 	switch srcMetadata.Scheme {
-	case source.ImageScheme:
+	case scheme.ContainerImageScheme:
 		input = inputImage
-	case source.DirectoryScheme:
+	case scheme.DirectoryScheme:
 		input = inputDirectory
-	case source.FileScheme:
+	case scheme.FileScheme:
 		input = inputFile
 	}
 

@@ -1,4 +1,4 @@
-package source
+package scheme
 
 import (
 	"os"
@@ -34,7 +34,7 @@ func TestDetectScheme(t *testing.T) {
 				src: image.DockerDaemonSource,
 				ref: "wagoodman/dive:latest",
 			},
-			expectedScheme:   ImageScheme,
+			expectedScheme:   ContainerImageScheme,
 			expectedLocation: "wagoodman/dive:latest",
 		},
 		{
@@ -44,7 +44,7 @@ func TestDetectScheme(t *testing.T) {
 				src: image.DockerDaemonSource,
 				ref: "wagoodman/dive",
 			},
-			expectedScheme:   ImageScheme,
+			expectedScheme:   ContainerImageScheme,
 			expectedLocation: "wagoodman/dive",
 		},
 		{
@@ -54,7 +54,7 @@ func TestDetectScheme(t *testing.T) {
 				src: image.OciRegistrySource,
 				ref: "wagoodman/dive:latest",
 			},
-			expectedScheme:   ImageScheme,
+			expectedScheme:   ContainerImageScheme,
 			expectedLocation: "wagoodman/dive:latest",
 		},
 		{
@@ -64,7 +64,7 @@ func TestDetectScheme(t *testing.T) {
 				src: image.DockerDaemonSource,
 				ref: "wagoodman/dive:latest",
 			},
-			expectedScheme:   ImageScheme,
+			expectedScheme:   ContainerImageScheme,
 			expectedLocation: "wagoodman/dive:latest",
 		},
 		{
@@ -74,7 +74,7 @@ func TestDetectScheme(t *testing.T) {
 				src: image.DockerDaemonSource,
 				ref: "wagoodman/dive",
 			},
-			expectedScheme:   ImageScheme,
+			expectedScheme:   ContainerImageScheme,
 			expectedLocation: "wagoodman/dive",
 		},
 		{
@@ -84,7 +84,7 @@ func TestDetectScheme(t *testing.T) {
 				src: image.DockerDaemonSource,
 				ref: "latest",
 			},
-			expectedScheme: ImageScheme,
+			expectedScheme: ContainerImageScheme,
 			// we expected to be able to handle this case better, however, I don't see a way to do this
 			// the user will need to provide more explicit input (docker:docker:latest)
 			expectedLocation: "latest",
@@ -96,7 +96,7 @@ func TestDetectScheme(t *testing.T) {
 				src: image.DockerDaemonSource,
 				ref: "docker:latest",
 			},
-			expectedScheme: ImageScheme,
+			expectedScheme: ContainerImageScheme,
 			// we expected to be able to handle this case better, however, I don't see a way to do this
 			// the user will need to provide more explicit input (docker:docker:latest)
 			expectedLocation: "docker:latest",
@@ -108,7 +108,7 @@ func TestDetectScheme(t *testing.T) {
 				src: image.OciTarballSource,
 				ref: "some/path-to-file",
 			},
-			expectedScheme:   ImageScheme,
+			expectedScheme:   ContainerImageScheme,
 			expectedLocation: "some/path-to-file",
 		},
 		{
@@ -119,7 +119,7 @@ func TestDetectScheme(t *testing.T) {
 				ref: "some/path-to-dir",
 			},
 			dirs:             []string{"some/path-to-dir"},
-			expectedScheme:   ImageScheme,
+			expectedScheme:   ContainerImageScheme,
 			expectedLocation: "some/path-to-dir",
 		},
 		{
@@ -140,7 +140,7 @@ func TestDetectScheme(t *testing.T) {
 				src: image.DockerDaemonSource,
 				ref: "some/path-to-dir",
 			},
-			expectedScheme:   ImageScheme,
+			expectedScheme:   ContainerImageScheme,
 			expectedLocation: "some/path-to-dir",
 		},
 		{
@@ -150,7 +150,7 @@ func TestDetectScheme(t *testing.T) {
 				src: image.PodmanDaemonSource,
 				ref: "something:latest",
 			},
-			expectedScheme:   ImageScheme,
+			expectedScheme:   ContainerImageScheme,
 			expectedLocation: "something:latest",
 		},
 		{
@@ -214,7 +214,7 @@ func TestDetectScheme(t *testing.T) {
 				src: image.OciDirectorySource,
 				ref: "~/some-path",
 			},
-			expectedScheme:   ImageScheme,
+			expectedScheme:   ContainerImageScheme,
 			expectedLocation: "~/some-path",
 		},
 		{
@@ -288,7 +288,7 @@ func TestDetectScheme(t *testing.T) {
 				}
 			}
 
-			actualScheme, actualSource, actualLocation, err := DetectScheme(fs, imageDetector, test.userInput)
+			actualScheme, actualSource, actualLocation, err := detect(fs, imageDetector, test.userInput)
 			if err != nil {
 				t.Fatalf("unexpected err : %+v", err)
 			}

@@ -1,6 +1,7 @@
 package cyclonedxhelpers
 
 import (
+	"github.com/anchore/syft/syft/source/scheme"
 	"time"
 
 	"github.com/CycloneDX/cyclonedx-go"
@@ -173,7 +174,7 @@ func toDependencies(relationships []artifact.Relationship) []cyclonedx.Dependenc
 func toBomDescriptorComponent(srcMetadata source.Metadata) *cyclonedx.Component {
 	name := srcMetadata.Name
 	switch srcMetadata.Scheme {
-	case source.ImageScheme:
+	case scheme.ContainerImageScheme:
 		if name == "" {
 			name = srcMetadata.ImageMetadata.UserInput
 		}
@@ -187,7 +188,7 @@ func toBomDescriptorComponent(srcMetadata source.Metadata) *cyclonedx.Component 
 			Name:    name,
 			Version: srcMetadata.ImageMetadata.ManifestDigest,
 		}
-	case source.DirectoryScheme, source.FileScheme:
+	case scheme.DirectoryScheme, scheme.FileScheme:
 		if name == "" {
 			name = srcMetadata.Path
 		}

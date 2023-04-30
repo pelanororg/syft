@@ -2,6 +2,7 @@ package github
 
 import (
 	"encoding/json"
+	"github.com/anchore/syft/syft/source/scheme"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,7 +17,7 @@ import (
 func Test_toGithubModel(t *testing.T) {
 	s := sbom.SBOM{
 		Source: source.Metadata{
-			Scheme: source.ImageScheme,
+			Scheme: scheme.ContainerImageScheme,
 			ImageMetadata: source.ImageMetadata{
 				UserInput:    "ubuntu:18.04",
 				Architecture: "amd64",
@@ -135,27 +136,27 @@ func Test_toGithubModel(t *testing.T) {
 
 	// Just test the other schemes:
 	s.Source.Path = "."
-	s.Source.Scheme = source.DirectoryScheme
+	s.Source.Scheme = scheme.DirectoryScheme
 	actual = toGithubModel(&s)
 	assert.Equal(t, "etc", actual.Manifests["etc"].Name)
 
 	s.Source.Path = "./artifacts"
-	s.Source.Scheme = source.DirectoryScheme
+	s.Source.Scheme = scheme.DirectoryScheme
 	actual = toGithubModel(&s)
 	assert.Equal(t, "artifacts/etc", actual.Manifests["artifacts/etc"].Name)
 
 	s.Source.Path = "/artifacts"
-	s.Source.Scheme = source.DirectoryScheme
+	s.Source.Scheme = scheme.DirectoryScheme
 	actual = toGithubModel(&s)
 	assert.Equal(t, "/artifacts/etc", actual.Manifests["/artifacts/etc"].Name)
 
 	s.Source.Path = "./executable"
-	s.Source.Scheme = source.FileScheme
+	s.Source.Scheme = scheme.FileScheme
 	actual = toGithubModel(&s)
 	assert.Equal(t, "executable", actual.Manifests["executable"].Name)
 
 	s.Source.Path = "./archive.tar.gz"
-	s.Source.Scheme = source.FileScheme
+	s.Source.Scheme = scheme.FileScheme
 	actual = toGithubModel(&s)
 	assert.Equal(t, "archive.tar.gz:/etc", actual.Manifests["archive.tar.gz:/etc"].Name)
 }

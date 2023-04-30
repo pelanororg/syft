@@ -2,6 +2,7 @@ package spdxhelpers
 
 import (
 	"errors"
+	"github.com/anchore/syft/syft/source/scheme"
 	"net/url"
 	"strconv"
 	"strings"
@@ -27,7 +28,7 @@ func ToSyftModel(doc *spdx.Document) (*sbom.SBOM, error) {
 
 	spdxIDMap := make(map[string]interface{})
 
-	src := source.Metadata{Scheme: source.UnknownScheme}
+	src := source.Metadata{Scheme: scheme.UnknownScheme}
 	src.Scheme = extractSchemeFromNamespace(doc.DocumentNamespace)
 
 	s := &sbom.SBOM{
@@ -53,24 +54,24 @@ func ToSyftModel(doc *spdx.Document) (*sbom.SBOM, error) {
 // image, directory, for example. This is our best effort to determine
 // the scheme. Syft-generated SBOMs have in the namespace
 // field a type encoded, which we try to identify here.
-func extractSchemeFromNamespace(ns string) source.Scheme {
+func extractSchemeFromNamespace(ns string) scheme.Scheme {
 	u, err := url.Parse(ns)
 	if err != nil {
-		return source.UnknownScheme
+		return scheme.UnknownScheme
 	}
 
 	parts := strings.Split(u.Path, "/")
 	for _, p := range parts {
 		switch p {
 		case inputFile:
-			return source.FileScheme
+			return scheme.FileScheme
 		case inputImage:
-			return source.ImageScheme
+			return scheme.ContainerImageScheme
 		case inputDirectory:
-			return source.DirectoryScheme
+			return scheme.DirectoryScheme
 		}
 	}
-	return source.UnknownScheme
+	return scheme.UnknownScheme
 }
 
 func findLinuxReleaseByPURL(doc *spdx.Document) *linux.Release {

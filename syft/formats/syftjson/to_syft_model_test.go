@@ -1,6 +1,7 @@
 package syftjson
 
 import (
+	"github.com/anchore/syft/syft/source/scheme"
 	"testing"
 
 	"github.com/scylladb/go-set/strset"
@@ -16,7 +17,7 @@ import (
 
 func Test_toSyftSourceData(t *testing.T) {
 	allSchemes := strset.New()
-	for _, s := range source.AllSchemes {
+	for _, s := range scheme.AllSchemes {
 		allSchemes.Add(string(s))
 	}
 	testedSchemes := strset.New()
@@ -29,7 +30,7 @@ func Test_toSyftSourceData(t *testing.T) {
 		{
 			name: "directory",
 			expected: source.Metadata{
-				Scheme: source.DirectoryScheme,
+				Scheme: scheme.DirectoryScheme,
 				Path:   "some/path",
 			},
 			src: model.Source{
@@ -40,7 +41,7 @@ func Test_toSyftSourceData(t *testing.T) {
 		{
 			name: "file",
 			expected: source.Metadata{
-				Scheme: source.FileScheme,
+				Scheme: scheme.FileScheme,
 				Path:   "some/path",
 			},
 			src: model.Source{
@@ -51,7 +52,7 @@ func Test_toSyftSourceData(t *testing.T) {
 		{
 			name: "image",
 			expected: source.Metadata{
-				Scheme: source.ImageScheme,
+				Scheme: scheme.ContainerImageScheme,
 				ImageMetadata: source.ImageMetadata{
 					UserInput:      "user-input",
 					ID:             "id...",

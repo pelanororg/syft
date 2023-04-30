@@ -2,6 +2,7 @@ package spdxhelpers
 
 import (
 	"fmt"
+	"github.com/anchore/syft/syft/source/scheme"
 	"strings"
 	"testing"
 
@@ -13,7 +14,7 @@ import (
 
 func Test_documentNamespace(t *testing.T) {
 	allSchemes := strset.New()
-	for _, s := range source.AllSchemes {
+	for _, s := range scheme.AllSchemes {
 		allSchemes.Add(string(s))
 	}
 	testedSchemes := strset.New()
@@ -28,7 +29,7 @@ func Test_documentNamespace(t *testing.T) {
 			name:      "image",
 			inputName: "my-name",
 			srcMetadata: source.Metadata{
-				Scheme: source.ImageScheme,
+				Scheme: scheme.ContainerImageScheme,
 				ImageMetadata: source.ImageMetadata{
 					UserInput:      "image-repo/name:tag",
 					ID:             "id",
@@ -41,7 +42,7 @@ func Test_documentNamespace(t *testing.T) {
 			name:      "directory",
 			inputName: "my-name",
 			srcMetadata: source.Metadata{
-				Scheme: source.DirectoryScheme,
+				Scheme: scheme.DirectoryScheme,
 				Path:   "some/path/to/place",
 			},
 			expected: "https://anchore.com/syft/dir/my-name-",
@@ -50,7 +51,7 @@ func Test_documentNamespace(t *testing.T) {
 			name:      "file",
 			inputName: "my-name",
 			srcMetadata: source.Metadata{
-				Scheme: source.FileScheme,
+				Scheme: scheme.FileScheme,
 				Path:   "some/path/to/place",
 			},
 			expected: "https://anchore.com/syft/file/my-name-",

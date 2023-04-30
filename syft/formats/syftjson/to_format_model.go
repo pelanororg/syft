@@ -2,6 +2,7 @@ package syftjson
 
 import (
 	"fmt"
+	"github.com/anchore/syft/syft/source/scheme"
 	"sort"
 	"strconv"
 
@@ -241,7 +242,7 @@ func toRelationshipModel(relationships []artifact.Relationship) []model.Relation
 // toSourceModel creates a new source object to be represented into JSON.
 func toSourceModel(src source.Metadata) (model.Source, error) {
 	switch src.Scheme {
-	case source.ImageScheme:
+	case scheme.ContainerImageScheme:
 		metadata := src.ImageMetadata
 		// ensure that empty collections are not shown as null
 		if metadata.RepoDigests == nil {
@@ -255,13 +256,13 @@ func toSourceModel(src source.Metadata) (model.Source, error) {
 			Type:   "image",
 			Target: metadata,
 		}, nil
-	case source.DirectoryScheme:
+	case scheme.DirectoryScheme:
 		return model.Source{
 			ID:     src.ID,
 			Type:   "directory",
 			Target: src.Path,
 		}, nil
-	case source.FileScheme:
+	case scheme.FileScheme:
 		return model.Source{
 			ID:     src.ID,
 			Type:   "file",

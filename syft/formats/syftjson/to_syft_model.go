@@ -1,6 +1,7 @@
 package syftjson
 
 import (
+	"github.com/anchore/syft/syft/source/scheme"
 	"os"
 	"strconv"
 	"strings"
@@ -227,7 +228,7 @@ func toSyftSourceData(s model.Source) *source.Metadata {
 		}
 		return &source.Metadata{
 			ID:     s.ID,
-			Scheme: source.DirectoryScheme,
+			Scheme: scheme.DirectoryScheme,
 			Path:   path,
 		}
 	case "file":
@@ -238,7 +239,7 @@ func toSyftSourceData(s model.Source) *source.Metadata {
 		}
 		return &source.Metadata{
 			ID:     s.ID,
-			Scheme: source.FileScheme,
+			Scheme: scheme.FileScheme,
 			Path:   path,
 		}
 	case "image":
@@ -249,7 +250,7 @@ func toSyftSourceData(s model.Source) *source.Metadata {
 		}
 		return &source.Metadata{
 			ID:            s.ID,
-			Scheme:        source.ImageScheme,
+			Scheme:        scheme.ContainerImageScheme,
 			ImageMetadata: metadata,
 		}
 	}

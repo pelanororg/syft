@@ -1,6 +1,7 @@
 package spdxhelpers
 
 import (
+	"github.com/anchore/syft/syft/source/scheme"
 	"testing"
 
 	"github.com/spdx/tools-golang/spdx"
@@ -196,31 +197,31 @@ func Test_extractMetadata(t *testing.T) {
 func TestExtractSourceFromNamespaces(t *testing.T) {
 	tests := []struct {
 		namespace string
-		expected  source.Scheme
+		expected  scheme.Scheme
 	}{
 		{
 			namespace: "https://anchore.com/syft/file/d42b01d0-7325-409b-b03f-74082935c4d3",
-			expected:  source.FileScheme,
+			expected:  scheme.FileScheme,
 		},
 		{
 			namespace: "https://anchore.com/syft/image/d42b01d0-7325-409b-b03f-74082935c4d3",
-			expected:  source.ImageScheme,
+			expected:  scheme.ContainerImageScheme,
 		},
 		{
 			namespace: "https://anchore.com/syft/dir/d42b01d0-7325-409b-b03f-74082935c4d3",
-			expected:  source.DirectoryScheme,
+			expected:  scheme.DirectoryScheme,
 		},
 		{
 			namespace: "https://another-host/blob/123",
-			expected:  source.UnknownScheme,
+			expected:  scheme.UnknownScheme,
 		},
 		{
 			namespace: "bla bla",
-			expected:  source.UnknownScheme,
+			expected:  scheme.UnknownScheme,
 		},
 		{
 			namespace: "",
-			expected:  source.UnknownScheme,
+			expected:  scheme.UnknownScheme,
 		},
 	}
 

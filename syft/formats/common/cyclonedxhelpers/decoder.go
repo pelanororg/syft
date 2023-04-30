@@ -2,6 +2,7 @@ package cyclonedxhelpers
 
 import (
 	"fmt"
+	"github.com/anchore/syft/syft/source/scheme"
 	"io"
 
 	"github.com/CycloneDX/cyclonedx-go"
@@ -244,12 +245,12 @@ func extractComponents(meta *cyclonedx.Metadata) source.Metadata {
 	switch c.Type {
 	case cyclonedx.ComponentTypeContainer:
 		return source.Metadata{
-			Scheme:        source.ImageScheme,
+			Scheme:        scheme.ContainerImageScheme,
 			ImageMetadata: image,
 		}
 	case cyclonedx.ComponentTypeFile:
 		return source.Metadata{
-			Scheme:        source.FileScheme, // or source.DirectoryScheme
+			Scheme:        scheme.FileScheme, // or source.DirectoryScheme
 			Path:          c.Name,
 			ImageMetadata: image,
 		}

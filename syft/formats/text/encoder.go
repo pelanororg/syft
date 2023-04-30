@@ -2,11 +2,11 @@ package text
 
 import (
 	"fmt"
+	"github.com/anchore/syft/syft/source/scheme"
 	"io"
 	"text/tabwriter"
 
 	"github.com/anchore/syft/syft/sbom"
-	"github.com/anchore/syft/syft/source"
 )
 
 func encoder(output io.Writer, s sbom.SBOM) error {
@@ -15,9 +15,9 @@ func encoder(output io.Writer, s sbom.SBOM) error {
 	w.Init(output, 0, 8, 0, '\t', tabwriter.AlignRight)
 
 	switch s.Source.Scheme {
-	case source.DirectoryScheme, source.FileScheme:
+	case scheme.DirectoryScheme, scheme.FileScheme:
 		fmt.Fprintf(w, "[Path: %s]\n", s.Source.Path)
-	case source.ImageScheme:
+	case scheme.ContainerImageScheme:
 		fmt.Fprintln(w, "[Image]")
 
 		for idx, l := range s.Source.ImageMetadata.Layers {

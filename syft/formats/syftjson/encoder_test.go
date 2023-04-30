@@ -2,6 +2,7 @@ package syftjson
 
 import (
 	"flag"
+	"github.com/anchore/syft/syft/source/scheme"
 	"regexp"
 	"testing"
 
@@ -166,7 +167,7 @@ func TestEncodeFullJSONDocument(t *testing.T) {
 		},
 		Source: source.Metadata{
 			ID:     "c2b46b4eb06296933b7cf0722683964e9ecbd93265b9ef6ae9642e3952afbba0",
-			Scheme: source.ImageScheme,
+			Scheme: scheme.ContainerImageScheme,
 			ImageMetadata: source.ImageMetadata{
 				UserInput:      "user-image-input",
 				ID:             "sha256:c2b46b4eb06296933b7cf0722683964e9ecbd93265b9ef6ae9642e3952afbba0",
