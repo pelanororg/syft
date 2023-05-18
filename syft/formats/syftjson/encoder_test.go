@@ -47,7 +47,7 @@ func schemaVersionRedactor(s []byte) []byte {
 }
 
 func TestEncodeFullJSONDocument(t *testing.T) {
-	catalog := pkg.NewCatalog()
+	catalog := pkg.NewCollection()
 
 	p1 := pkg.Package{
 		Name:    "package-1",
@@ -61,7 +61,7 @@ func TestEncodeFullJSONDocument(t *testing.T) {
 		FoundBy:      "the-cataloger-1",
 		Language:     pkg.Python,
 		MetadataType: pkg.PythonPackageMetadataType,
-		Licenses:     []string{"MIT"},
+		Licenses:     pkg.NewLicenseSet(pkg.NewLicense("MIT")),
 		Metadata: pkg.PythonPackageMetadata{
 			Name:    "package-1",
 			Version: "1.0.1",
@@ -100,7 +100,7 @@ func TestEncodeFullJSONDocument(t *testing.T) {
 
 	s := sbom.SBOM{
 		Artifacts: sbom.Artifacts{
-			PackageCatalog: catalog,
+			Packages: catalog,
 			FileMetadata: map[source.Coordinates]source.FileMetadata{
 				source.NewLocation("/a/place").Coordinates: {
 					Mode:    0775,

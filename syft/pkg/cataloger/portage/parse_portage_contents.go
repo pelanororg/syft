@@ -105,7 +105,8 @@ func addLicenses(resolver source.FileResolver, dbLocation source.Location, p *pk
 		return
 	}
 
-	p.Licenses = extractLicenses(licenseReader)
+	licenseCandidates := extractLicenses(licenseReader)
+	p.Licenses = pkg.NewLicenseSet(pkg.NewLicensesFromLocation(*location, licenseCandidates...)...)
 	p.Locations.Add(location.WithAnnotation(pkg.EvidenceAnnotationKey, pkg.SupportingEvidenceAnnotation))
 }
 

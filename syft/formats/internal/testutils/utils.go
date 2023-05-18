@@ -47,13 +47,14 @@ func AssertEncoderAgainstGoldenImageSnapshot(t *testing.T, format sbom.Format, s
 
 	err := format.Encode(&buffer, sbom)
 	assert.NoError(t, err)
-	actual := redact(buffer.Bytes(), redactors...)
+	actual := buffer.Bytes()
 
 	// replace the expected snapshot contents with the current encoder contents
 	if updateSnapshot {
 		testutils.UpdateGoldenFileContents(t, actual)
 	}
 
+	actual = redact(actual, redactors...)
 	expected := redact(testutils.GetGoldenFileContents(t), redactors...)
 
 	if json {
@@ -71,13 +72,14 @@ func AssertEncoderAgainstGoldenSnapshot(t *testing.T, format sbom.Format, sbom s
 
 	err := format.Encode(&buffer, sbom)
 	assert.NoError(t, err)
-	actual := redact(buffer.Bytes(), redactors...)
+	actual := buffer.Bytes()
 
 	// replace the expected snapshot contents with the current encoder contents
 	if updateSnapshot {
 		testutils.UpdateGoldenFileContents(t, actual)
 	}
 
+	actual = redact(actual, redactors...)
 	expected := redact(testutils.GetGoldenFileContents(t), redactors...)
 
 	if json {
@@ -93,7 +95,7 @@ func AssertEncoderAgainstGoldenSnapshot(t *testing.T, format sbom.Format, sbom s
 
 func ImageInput(t testing.TB, testImage string, options ...ImageOption) sbom.SBOM {
 	t.Helper()
-	catalog := pkg.NewCatalog()
+	catalog := pkg.NewCollection()
 	var cfg imageCfg
 	var img *image.Image
 	for _, opt := range options {
@@ -117,7 +119,7 @@ func ImageInput(t testing.TB, testImage string, options ...ImageOption) sbom.SBO
 
 	return sbom.SBOM{
 		Artifacts: sbom.Artifacts{
-			PackageCatalog: catalog,
+			Packages: catalog,
 			LinuxDistribution: &linux.Release{
 				PrettyName: "debian",
 				Name:       "debian",
@@ -145,7 +147,7 @@ func carriageRedactor(s []byte) []byte {
 	return []byte(msg)
 }
 
-func populateImageCatalog(catalog *pkg.Catalog, img *image.Image) {
+func populateImageCatalog(catalog *pkg.Collection, img *image.Image) {
 	_, ref1, _ := img.SquashedTree().File("/somefile-1.txt", filetree.FollowBasenameLinks)
 	_, ref2, _ := img.SquashedTree().File("/somefile-2.txt", filetree.FollowBasenameLinks)
 
@@ -160,7 +162,9 @@ func populateImageCatalog(catalog *pkg.Catalog, img *image.Image) {
 		FoundBy:      "the-cataloger-1",
 		Language:     pkg.Python,
 		MetadataType: pkg.PythonPackageMetadataType,
-		Licenses:     []string{"MIT"},
+		Licenses: pkg.NewLicenseSet(
+			pkg.NewLicense("MIT"),
+		),
 		Metadata: pkg.PythonPackageMetadata{
 			Name:    "package-1",
 			Version: "1.0.1",
@@ -198,7 +202,7 @@ func DirectoryInput(t testing.TB) sbom.SBOM {
 
 	return sbom.SBOM{
 		Artifacts: sbom.Artifacts{
-			PackageCatalog: catalog,
+			Packages: catalog,
 			LinuxDistribution: &linux.Release{
 				PrettyName: "debian",
 				Name:       "debian",
@@ -229,7 +233,7 @@ func DirectoryInputWithAuthorField(t testing.TB) sbom.SBOM {
 
 	return sbom.SBOM{
 		Artifacts: sbom.Artifacts{
-			PackageCatalog: catalog,
+			Packages: catalog,
 			LinuxDistribution: &linux.Release{
 				PrettyName: "debian",
 				Name:       "debian",
@@ -252,8 +256,8 @@ func DirectoryInputWithAuthorField(t testing.TB) sbom.SBOM {
 	}
 }
 
-func newDirectoryCatalog() *pkg.Catalog {
-	catalog := pkg.NewCatalog()
+func newDirectoryCatalog() *pkg.Collection {
+	catalog := pkg.NewCollection()
 
 	// populate catalog with test data
 	catalog.Add(pkg.Package{
@@ -266,7 +270,9 @@ func newDirectoryCatalog() *pkg.Catalog {
 		),
 		Language:     pkg.Python,
 		MetadataType: pkg.PythonPackageMetadataType,
-		Licenses:     []string{"MIT"},
+		Licenses: pkg.NewLicenseSet(
+			pkg.NewLicense("MIT"),
+		),
 		Metadata: pkg.PythonPackageMetadata{
 			Name:    "package-1",
 			Version: "1.0.1",
@@ -303,8 +309,8 @@ func newDirectoryCatalog() *pkg.Catalog {
 	return catalog
 }
 
-func newDirectoryCatalogWithAuthorField() *pkg.Catalog {
-	catalog := pkg.NewCatalog()
+func newDirectoryCatalogWithAuthorField() *pkg.Collection {
+	catalog := pkg.NewCollection()
 
 	// populate catalog with test data
 	catalog.Add(pkg.Package{
@@ -317,7 +323,9 @@ func newDirectoryCatalogWithAuthorField() *pkg.Catalog {
 		),
 		Language:     pkg.Python,
 		MetadataType: pkg.PythonPackageMetadataType,
-		Licenses:     []string{"MIT"},
+		Licenses: pkg.NewLicenseSet(
+			pkg.NewLicense("MIT"),
+		),
 		Metadata: pkg.PythonPackageMetadata{
 			Name:    "package-1",
 			Version: "1.0.1",
@@ -357,7 +365,7 @@ func newDirectoryCatalogWithAuthorField() *pkg.Catalog {
 
 //nolint:gosec
 func AddSampleFileRelationships(s *sbom.SBOM) {
-	catalog := s.Artifacts.PackageCatalog.Sorted()
+	catalog := s.Artifacts.Packages.Sorted()
 	s.Artifacts.FileMetadata = map[source.Coordinates]source.FileMetadata{}
 
 	files := []string{"/f1", "/f2", "/d1/f3", "/d2/f4", "/z1/f5", "/a1/f6"}
