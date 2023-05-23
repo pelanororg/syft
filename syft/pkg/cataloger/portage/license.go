@@ -3,10 +3,10 @@ package portage
 import (
 	"bufio"
 	"io"
-	"sort"
 	"strings"
 
 	"github.com/anchore/syft/internal"
+	"github.com/anchore/syft/syft/license"
 )
 
 // the licenses files seems to conform to a custom format that is common to gentoo packages.
@@ -25,18 +25,66 @@ import (
 //
 // this does not conform to SPDX license expressions, which would be a great enhancement in the future.
 
-func extractLicenses(reader io.Reader) []string {
+// extractLicenses attempts to parse the license field into a valid SPDX license expression
+// if the expression cannot be parsed, the extract licenses will be returned as a slice of string
+func extractLicenses(reader io.Reader) (spdxExpression string, licenses []string) {
 	findings := internal.NewStringSet()
 	scanner := bufio.NewScanner(reader)
 	scanner.Split(bufio.ScanWords)
+	var (
+		mandatoryLicenses, conditionalLicenses, useflagLicenses []string
+		pipe                                                    bool
+		useflag                                                 bool
+	)
+
 	for scanner.Scan() {
 		token := scanner.Text()
+		if token == "||" {
+			pipe = true
+			continue
+		}
+		// useflag
+		if strings.Contains(token, "?") {
+			useflag = true
+			continue
+		}
 		if !strings.ContainsAny(token, "()|?") {
-			findings.Add(token)
+			switch {
+			case useflag:
+				useflagLicenses = append(useflagLicenses, token)
+			case pipe:
+				conditionalLicenses = append(conditionalLicenses, token)
+			default:
+				mandatoryLicenses = append(mandatoryLicenses, token)
+			}
 		}
 	}
-	licenses := findings.ToSlice()
-	sort.Strings(licenses)
 
-	return licenses
+	findings.Add(mandatoryLicenses...)
+	findings.Add(conditionalLicenses...)
+	findings.Add(useflagLicenses...)
+
+	var mandatoryStatement, conditionalStatement string
+	// attempt to build valid SPDX license expression
+	if len(mandatoryLicenses) > 0 {
+		mandatoryStatement = strings.Join(mandatoryLicenses, " AND ")
+	}
+	if len(conditionalLicenses) > 0 {
+		conditionalStatement = strings.Join(conditionalLicenses, " OR ")
+	}
+
+	if mandatoryStatement != "" && conditionalStatement != "" {
+		spdxExpression = mandatoryStatement + " AND (" + conditionalStatement + ")"
+	} else if mandatoryStatement != "" {
+		spdxExpression = mandatoryStatement
+	} else if conditionalStatement != "" {
+		spdxExpression = conditionalStatement
+	}
+
+	if _, err := license.ParseExpression(spdxExpression); err != nil {
+		// the expression could not be parsed, return the licenses as a slice of strings
+		licenses = findings.ToSlice()
+		return
+	}
+	return spdxExpression, nil
 }
