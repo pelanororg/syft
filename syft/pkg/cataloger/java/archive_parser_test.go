@@ -172,6 +172,7 @@ func TestParseJar(t *testing.T) {
 					Language:     pkg.Java,
 					Type:         pkg.JavaPkg,
 					MetadataType: pkg.JavaMetadataType,
+					Licenses:     pkg.NewLicenseSet(pkg.NewLicense("Apache 2")),
 					Metadata: pkg.JavaMetadata{
 						// ensure that nested packages with different names than that of the parent are appended as
 						// a suffix on the virtual path with a colon separator between group name and artifact name
@@ -190,7 +191,6 @@ func TestParseJar(t *testing.T) {
 							Name:        "Joda time",
 							Description: "Date and time library to replace JDK date handling",
 							URL:         "http://joda-time.sourceforge.net",
-							Licenses:    []string{"Apache 2"},
 						},
 					},
 				},
@@ -235,6 +235,7 @@ func TestParseJar(t *testing.T) {
 					Name:         "joda-time",
 					Version:      "2.9.2",
 					PURL:         "pkg:maven/joda-time/joda-time@2.9.2",
+					Licenses:     pkg.NewLicenseSet(pkg.NewLicense("Apache 2")),
 					Language:     pkg.Java,
 					Type:         pkg.JavaPkg,
 					MetadataType: pkg.JavaMetadataType,
@@ -256,7 +257,6 @@ func TestParseJar(t *testing.T) {
 							Name:        "Joda-Time",
 							Description: "Date and time library to replace JDK date handling",
 							URL:         "http://www.joda.org/joda-time/",
-							Licenses:    []string{"Apache 2"},
 						},
 					},
 				},
@@ -620,7 +620,7 @@ func Test_newPackageFromMavenData(t *testing.T) {
 	tests := []struct {
 		name            string
 		props           pkg.PomProperties
-		project         *pkg.PomProject
+		project         *parsedPomProject
 		parent          *pkg.Package
 		expectedParent  pkg.Package
 		expectedPackage *pkg.Package
@@ -689,8 +689,8 @@ func Test_newPackageFromMavenData(t *testing.T) {
 				ArtifactID: "some-artifact-id",
 				Version:    "1.0",
 			},
-			project: &pkg.PomProject{
-				Parent: &pkg.PomParent{
+			project: &parsedPomProject{
+				Parent: &parsedPomParent{
 					GroupID:    "some-parent-group-id",
 					ArtifactID: "some-parent-artifact-id",
 					Version:    "1.0-parent",

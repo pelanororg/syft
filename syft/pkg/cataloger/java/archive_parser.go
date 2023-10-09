@@ -216,11 +216,30 @@ func (j *archiveParser) discoverMainPackage() (*pkg.Package, error) {
 	}, nil
 }
 
-func (j *archiveParser) guessMainPackageNameAndVersionFromPomInfo() (string, string, []string) {
+type parsedPomProject struct {
+	Path        string           `json:"path"`
+	Parent      *parsedPomParent `json:"parent,omitempty"`
+	GroupID     string           `json:"groupId"`
+	ArtifactID  string           `json:"artifactId"`
+	Version     string           `json:"version"`
+	Name        string           `json:"name"`
+	Description string           `json:"description,omitempty"`
+	URL         string           `json:"url,omitempty"`
+	Licenses    []string         `json:"licenses"`
+}
+
+// PomParent contains the fields within the <parent> tag in a pom.xml file
+type parsedPomParent struct {
+	GroupID    string `json:"groupId"`
+	ArtifactID string `json:"artifactId"`
+	Version    string `json:"version"`
+}
+
+func (j *archiveParser) guessMainPackageNameAndVersionFromPomInfo() (name, version string, licenses []string) {
 	pomPropertyMatches := j.fileManifest.GlobMatch(pomPropertiesGlob)
 	pomMatches := j.fileManifest.GlobMatch(pomXMLGlob)
 	var pomPropertiesObject pkg.PomProperties
-	var pomProjectObject pkg.PomProject
+	var pomProjectObject parsedPomProject
 	if len(pomPropertyMatches) == 1 || len(pomMatches) == 1 {
 		// we have exactly 1 pom.properties or pom.xml in the archive; assume it represents the
 		// package we're scanning if the names seem like a plausible match
@@ -236,11 +255,11 @@ func (j *archiveParser) guessMainPackageNameAndVersionFromPomInfo() (string, str
 			}
 		}
 	}
-	name := pomPropertiesObject.ArtifactID
+	name = pomPropertiesObject.ArtifactID
 	if name == "" {
 		name = pomProjectObject.ArtifactID
 	}
-	version := pomPropertiesObject.Version
+	version = pomPropertiesObject.Version
 	if version == "" {
 		version = pomProjectObject.Version
 	}
@@ -271,7 +290,7 @@ func (j *archiveParser) discoverPkgsFromAllMavenFiles(parentPkg *pkg.Package) ([
 	}
 
 	for parentPath, propertiesObj := range properties {
-		var pomProject *pkg.PomProject
+		var pomProject *parsedPomProject
 		if proj, exists := projects[parentPath]; exists {
 			pomProject = &proj
 		}
@@ -402,13 +421,13 @@ func pomPropertiesByParentPath(archivePath string, location file.Location, extra
 	return propertiesByParentPath, nil
 }
 
-func pomProjectByParentPath(archivePath string, location file.Location, extractPaths []string) (map[string]pkg.PomProject, error) {
+func pomProjectByParentPath(archivePath string, location file.Location, extractPaths []string) (map[string]parsedPomProject, error) {
 	contentsOfMavenProjectFiles, err := intFile.ContentsFromZip(archivePath, extractPaths...)
 	if err != nil {
 		return nil, fmt.Errorf("unable to extract maven files: %w", err)
 	}
 
-	projectByParentPath := make(map[string]pkg.PomProject)
+	projectByParentPath := make(map[string]parsedPomProject)
 	for filePath, fileContents := range contentsOfMavenProjectFiles {
 		pomProject, err := parsePomXMLProject(filePath, strings.NewReader(fileContents))
 		if err != nil {
@@ -432,7 +451,7 @@ func pomProjectByParentPath(archivePath string, location file.Location, extractP
 
 // newPackageFromMavenData processes a single Maven POM properties for a given parent package, returning all listed Java packages found and
 // associating each discovered package to the given parent package. Note the pom.xml is optional, the pom.properties is not.
-func newPackageFromMavenData(pomProperties pkg.PomProperties, pomProject *pkg.PomProject, parentPkg *pkg.Package, location file.Location) *pkg.Package {
+func newPackageFromMavenData(pomProperties pkg.PomProperties, pomProject *parsedPomProject, parentPkg *pkg.Package, location file.Location) *pkg.Package {
 	// keep the artifact name within the virtual path if this package does not match the parent package
 	vPathSuffix := ""
 	groupID := ""
@@ -454,6 +473,9 @@ func newPackageFromMavenData(pomProperties pkg.PomProperties, pomProject *pkg.Po
 	}
 	virtualPath := location.AccessPath() + vPathSuffix
 
+	var pomMetadata *pkg.PomProject
+	pomMetadata = translateSyftPkgData(pomProject)
+
 	// discovered props = new package
 	p := pkg.Package{
 		Name:    pomProperties.ArtifactID,
@@ -467,7 +489,7 @@ func newPackageFromMavenData(pomProperties pkg.PomProperties, pomProject *pkg.Po
 		Metadata: pkg.JavaMetadata{
 			VirtualPath:   virtualPath,
 			PomProperties: &pomProperties,
-			PomProject:    pomProject,
+			PomProject:    pomMetadata,
 			Parent:        parentPkg,
 		},
 	}
@@ -478,6 +500,25 @@ func newPackageFromMavenData(pomProperties pkg.PomProperties, pomProject *pkg.Po
 	}
 
 	return &p
+}
+
+func translateSyftPkgData(pd *parsedPomProject) *pkg.PomProject {
+	pomParent := &pkg.PomParent{
+		pd.Parent.GroupID,
+		pd.Parent.ArtifactID,
+		pd.Parent.Version,
+	}
+
+	return &pkg.PomProject{
+		pd.Path,
+		pomParent,
+		pd.GroupID,
+		pd.ArtifactID,
+		pd.Version,
+		pd.Name,
+		pd.Description,
+		pd.URL,
+	}
 }
 
 func packageIdentitiesMatch(p pkg.Package, parentPkg *pkg.Package) bool {
