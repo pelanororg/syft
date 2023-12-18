@@ -76,6 +76,8 @@ require (
 	modernc.org/sqlite v1.28.0
 )
 
+require github.com/jedib0t/go-pretty/v6 v6.4.9
+
 require (
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
