@@ -1,5 +1,6 @@
 package main
 
+import "C"
 import (
 	_ "modernc.org/sqlite"
 
@@ -19,7 +20,8 @@ var (
 	gitDescription = internal.NotProvided
 )
 
-func main() {
+//export syft_main
+func syft_main() {
 	app := cli.Application(
 		clio.Identification{
 			Name:           applicationName,
@@ -31,4 +33,8 @@ func main() {
 	)
 
 	app.Run()
+}
+
+func main() {
+
 }
